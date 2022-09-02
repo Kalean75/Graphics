@@ -6,12 +6,12 @@ function composite( bgImg, fgImg, fgOpac, fgPos )
 {
     for(var i = 0; i < bgImg.data.length; i+=4)
     {
-        bgImg.data[i + 0] =  bgImg.data[i + 0];        // R value
-        bgImg.data[i + 1] =  bgImg.data[i + 1];        // G value
-        bgImg.data[i + 2] =  bgImg.data[i + 2];  // B value
-        bgImg.data[i + 3] = 0;      // A value
+        bgImg.data[i + 0] =  fgImg.data[i+0] * fgOpac+(1-fgOpac)*bgImg.data[i+0];        // R value
+        bgImg.data[i + 1] =  fgImg.data[i+1] * fgOpac+(1-fgOpac)*bgImg.data[i+1];        // G value
+        bgImg.data[i + 2] =  fgImg.data[i+2] * fgOpac+(1-fgOpac)*bgImg.data[i+2];  // B value
+        bgImg.data[i + 3] = fgOpac + (1-fgOpac) * bgImg.data[i+3];      // A value
     }
-    //var color = (alphafG*opacityFg+(1-opacityFg)*backgroundColor * alphaBackground)/alpha
+    //var color = (colorFg*opacityFg+(1-opacityFg)*backgroundColor * alphaBackground)/alpha
     //var alpha = foregroundAlpha + (1-forgroundAlpha)*backgroundAlpha
 
 }
