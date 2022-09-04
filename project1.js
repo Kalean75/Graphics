@@ -13,8 +13,8 @@ function composite( bgImg, fgImg, fgOpac, fgPos )
         var fgBlue = fgImg.data[(i-x) + 2];
         var fgAlpha = (fgImg.data[((i-x) + 3)] * fgOpac);
         var bgAlpha = bgImg.data[i + 3];
-        var alpha = (fgAlpha) + (1.0-fgOpac) * bgAlpha;
-           if(alpha != 0)
+        var alpha = (fgAlpha) + (1.0 - fgOpac) * bgAlpha;
+           if(alpha != 0 && fgAlpha != 0)
             {
                 bgImg.data[i] =  (fgAlpha * fgRed + (1.0 - fgOpac) * bgAlpha * bgImg.data[i]) / alpha;        // R value
                 bgImg.data[i + 1] =  (fgAlpha * fgGreen + (1.0 - fgOpac) * bgAlpha * bgImg.data[i + 1]) / alpha;        // G value
