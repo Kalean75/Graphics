@@ -4,25 +4,38 @@
 // fgPos is the position of the foreground image in pixels. It can be negative and (0,0) means the top-left pixels of the foreground and background are aligned.
 function composite( bgImg, fgImg, fgOpac, fgPos )
 {
-    var x = fgPos.x;
-    var y = fgPos.y;
-    for(var i = 0; i < fgImg.data.length; i+=4)
+    var offsetX = fgPos.x * 4;
+    var offsetY = fgPos.y * bgImg.width * 4;
+    var offset = offsetX + offsetY;
+    var fgRed;
+    var fgGreen;
+    var fgBlue;
+    var fgAlpha;
+    var bgAlpha;
+    var alpha;
+    for(var i = 0; i < fgImg.height*4; i+=4)
     {
-        var fgRed = fgImg.data[(i - x)];
-        var fgGreen =   fgImg.data[(i-x) + 1];
-        var fgBlue = fgImg.data[(i-x) + 2];
-        var fgAlpha = (fgImg.data[((i-x) + 3)] * fgOpac);
-        var bgAlpha = bgImg.data[i + 3];
-        var alpha = (fgAlpha) + (1.0 - fgOpac) * bgAlpha;
-           if(alpha != 0 && fgAlpha != 0)
+        for(var j = 0; j < fgImg.width*4; j+=4)
+        {
+            var bgIndex = i*bgImg.width + j + offset;
+            var fgIndex = i*fgImg.width + j;
+            fgRed = fgImg.data[fgIndex];
+            fgGreen =   fgImg.data[fgIndex +1];
+            fgBlue = fgImg.data[fgIndex+ 2];
+            fgAlpha = (fgImg.data[fgIndex+ 3] * fgOpac)/255;
+            bgAlpha = bgImg.data[bgIndex + 3]/255;
+            alpha = (fgAlpha) + (1.0 - fgAlpha) * bgAlpha;
+
+            if(alpha > 0 && fgAlpha > 0)
             {
-                bgImg.data[i] =  (fgAlpha * fgRed + (1.0 - fgOpac) * bgAlpha * bgImg.data[i]) / alpha;        // R value
-                bgImg.data[i + 1] =  (fgAlpha * fgGreen + (1.0 - fgOpac) * bgAlpha * bgImg.data[i + 1]) / alpha;        // G value
-                bgImg.data[i + 2] =  (fgAlpha * fgBlue + (1.0 - fgOpac) * bgAlpha * bgImg.data[i + 2]) / alpha; // B value
-                bgImg.data[i + 3] = alpha;  // A value
-            }       
+                bgImg.data[bgIndex] =  (fgAlpha * fgRed + (1.0 - fgAlpha) * bgAlpha * bgImg.data[bgIndex]) / alpha;        // R value
+                bgImg.data[bgIndex+ 1] =  (fgAlpha * fgGreen + (1.0 - fgAlpha) * bgAlpha * bgImg.data[bgIndex +1]) / alpha;        // G value
+                bgImg.data[bgIndex+ 2] =  (fgAlpha * fgBlue + (1.0 - fgAlpha) * bgAlpha * bgImg.data[bgIndex+ 2]) / alpha; // B value
+                //bgImg.data[bgIndex+ 3] = bgAlpha;  // A value
+            }
+    
+        }
     }
-    //context.putImageData(fgImg, fgPos.x, fgPos.y);
     //var color = (colorFg*opacityFg+(1-opacityFg)*backgroundColor * alphaBackground)/alpha
     //var alpha = foregroundAlpha + (1-forgroundAlpha)*backgroundAlpha
 
