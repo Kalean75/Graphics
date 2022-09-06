@@ -16,9 +16,9 @@ function composite( bgImg, fgImg, fgOpac, fgPos )
     var alpha;
     for(var i = 0; i < fgImg.height*4; i+=4)
     {
-        for(var j = 0; j <maxDrawX; j+=4)
+        for(var j = 0; j < maxDrawX; j+=4)
         {
-            var bgIndex = i*bgImg.width + j + offset;
+            var bgIndex = i*bgImg.width + j + offset; 
             var fgIndex = i*fgImg.width + j;
             fgRed = fgImg.data[fgIndex]; //foreground red
             fgGreen =   fgImg.data[fgIndex +1]; //foreground green
