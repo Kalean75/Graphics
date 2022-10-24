@@ -43,7 +43,6 @@ class MeshDrawer {
 		// Compile the shader program
 		this.prog = InitShaderProgram(MeshVS, MeshFS);
 		this.texture = gl.createTexture();
-		this.texture2 = gl.createTexture();
 		//this.texture2 = gl.createTexture();
 		// Get the ids of the uniform variables in the shaders
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
@@ -54,11 +53,12 @@ class MeshDrawer {
 		// Create the buffer objects
 		this.vertbuffer = gl.createBuffer();
 		this.texCoordbuffer = gl.createBuffer();
+
 		//initial color
-		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, this.texture2);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-			new Uint8Array([255, 0, 0, 255]));
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.texture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 0, 255]));
+		
 		//handle WebGL related initializations for rendering
 	}
 
@@ -122,11 +122,11 @@ class MeshDrawer {
 	{
 		gl.useProgram(this.prog);
 		//Bind the texture
-		gl.activeTexture(gl.TEXTURE0);
+		gl.activeTexture(gl.TEXTURE1);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
-		gl.uniform1i(this.sampler, 0);
+		gl.uniform1i(this.sampler, 1);
 		// You can set the texture image data using the following command.
-		this.img =img; 
+		this.img = img; 
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
 		// Now that we have a texture, it might be a good idea to set
 		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
@@ -135,7 +135,7 @@ class MeshDrawer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-		//this.showTexture(true);
+		this.showTexture(true);
 	}
 
 	// This method is called when the user changes the state of the
@@ -144,9 +144,9 @@ class MeshDrawer {
 	showTexture(show) {
 		// set the uniform parameter(s) of the fragment shader to specify if it should use the texture.
 		if (show) {
-			gl.activeTexture(gl.TEXTURE0);
+			gl.activeTexture(gl.TEXTURE1);
 			gl.bindTexture(gl.TEXTURE_2D, this.texture);
-			gl.uniform1i(this.sampler, 0);
+			gl.uniform1i(this.sampler, 1);
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, this.img);
 			//Texture buffer
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
@@ -156,9 +156,9 @@ class MeshDrawer {
 		}
 		else 
 		{
-			gl.activeTexture(gl.TEXTURE1);
+			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.texture);
-			gl.uniform1i(this.sampler, 1);
+			gl.uniform1i(this.sampler, 0);
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
 				new Uint8Array([255, 0, 0, 255]));
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
@@ -187,6 +187,6 @@ var MeshFS = `
 	uniform sampler2D tex;
 	void main()
 	{
-			gl_FragColor = texture2D(tex,texCoords);
+		gl_FragColor = texture2D(tex,texCoords);
 	}
 `;
