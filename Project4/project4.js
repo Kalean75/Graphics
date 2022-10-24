@@ -43,6 +43,7 @@ class MeshDrawer {
 		// Compile the shader program
 		this.prog = InitShaderProgram(MeshVS, MeshFS);
 		this.texture = gl.createTexture();
+		this.texture2 = gl.createTexture();
 		//this.texture2 = gl.createTexture();
 		// Get the ids of the uniform variables in the shaders
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
@@ -53,7 +54,11 @@ class MeshDrawer {
 		// Create the buffer objects
 		this.vertbuffer = gl.createBuffer();
 		this.texCoordbuffer = gl.createBuffer();
-
+		//initial color
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.texture2);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+			new Uint8Array([255, 0, 0, 255]));
 		//handle WebGL related initializations for rendering
 	}
 
@@ -85,9 +90,7 @@ class MeshDrawer {
 	swapYZ(swap) {
 		// [TO-DO] Set the uniform parameter(s) of the vertex shader
 		if (swap) {
-			var temp = this.texCoords.z;
-			this.texCoords.z = this.texCoords.y;
-			this.texCoords.y = temp;
+
 		}
 		else {
 
@@ -106,22 +109,25 @@ class MeshDrawer {
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.vertPos);
 		//Texture buffer
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
-		gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(this.texCoords);
+		//gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
+		//gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
+		//gl.enableVertexAttribArray(this.texCoords);
 		//draw triangles
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
 
 	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
-	setTexture(img) {
+	setTexture(img) 
+	{
 		gl.useProgram(this.prog);
 		//Bind the texture
+		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
+		gl.uniform1i(this.sampler, 0);
 		// You can set the texture image data using the following command.
+		this.img =img; 
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
-
 		// Now that we have a texture, it might be a good idea to set
 		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
 		gl.generateMipmap(gl.TEXTURE_2D)
@@ -129,6 +135,7 @@ class MeshDrawer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+		//this.showTexture(true);
 	}
 
 	// This method is called when the user changes the state of the
@@ -136,10 +143,28 @@ class MeshDrawer {
 	// The argument is a boolean that indicates if the checkbox is checked.
 	showTexture(show) {
 		// set the uniform parameter(s) of the fragment shader to specify if it should use the texture.
-		if (!show) {
+		if (show) {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.texture);
 			gl.uniform1i(this.sampler, 0);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, this.img);
+			//Texture buffer
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
+			gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(this.texCoords);
+		}
+		else 
+		{
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, this.texture);
+			gl.uniform1i(this.sampler, 1);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+				new Uint8Array([255, 0, 0, 255]));
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
+			gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(this.texCoords);
 		}
 	}
 }
