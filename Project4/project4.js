@@ -34,32 +34,29 @@ function GetModelViewProjection(projectionMatrix, translationX, translationY, tr
 }
 
 
-// [TO-DO] Complete the implementation of the following class.
-
-class MeshDrawer {
+// Draws the Mesh and textures for a 3D model
+class MeshDrawer 
+{
 	// The constructor is a good place for taking care of the necessary initializations.
-	constructor() {
-		// [TO-DO] initializations
+	constructor() 
+	{
+		// initializations
 		// Compile the shader program
+		this.swap = false;
 		this.prog = InitShaderProgram(MeshVS, MeshFS);
 		this.texture = gl.createTexture();
 		//this.texture2 = gl.createTexture();
 		// Get the ids of the uniform variables in the shaders
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
 		this.sampler = gl.getUniformLocation(this.prog, 'sampler')
+		this.showTex = gl.getUniformLocation(this.prog, 'textureShown')
 		// Get the ids of the vertex attributes and tex coordinates in the shaders
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
 		this.texCoords = gl.getAttribLocation(this.prog, 'txc');
 		// Create the buffer objects
 		this.vertbuffer = gl.createBuffer();
 		this.texCoordbuffer = gl.createBuffer();
-
-		//initial color
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.texture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 0, 255]));
 		
-		//handle WebGL related initializations for rendering
 	}
 
 
@@ -73,8 +70,9 @@ class MeshDrawer {
 	// Similarly, every two consecutive elements in the texCoords array
 	// form the texture coordinate of a vertex.
 	// Note that this method can be called multiple times.
-	setMesh(vertPos, texCoords) {
-		// [TO-DO] Update the contents of the vertex buffer objects.
+	setMesh(vertPos, texCoords) 
+	{
+		// Update the contents of the vertex buffer objects.
 		//Vertex
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPos), gl.STATIC_DRAW);
@@ -87,31 +85,50 @@ class MeshDrawer {
 	// This method is called when the user changes the state of the
 	// "Swap Y-Z Axes" checkbox. 
 	// The argument is a boolean that indicates if the checkbox is checked.
-	swapYZ(swap) {
-		// [TO-DO] Set the uniform parameter(s) of the vertex shader
-		if (swap) {
+	swapYZ(swap) 
+	{
+		// Set the uniform parameter(s) of the vertex shader
+		//this.mvp = gl.getUniformLocation(this.prog, 'mvp');
+		this.swap = swap;
+		gl.useProgram(this.prog);
+		var trans2 = [
+			1,0,0,0,
+			0,0,1,0,
+			0,1,0,0,
+			0,0,0,1
 
+		];
+		if (swap) 
+		{
+			// Swap Axis
+			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(this.trans,trans2));
 		}
-		else {
-
+		else
+		{
+			//Keep Axis
+			gl.uniformMatrix4fv(this.mvp, false, this.trans);
 		}
 	}
 
 	// This method is called to draw the triangular mesh.
 	// The argument is the transformation matrix, the same matrix returned
 	// by the GetModelViewProjection function above.
-	draw(trans) {
-		// [TO-DO] Complete the WebGL initializations before drawing
+	draw(trans) 
+	{
 		gl.useProgram(this.prog);
-		gl.uniformMatrix4fv(this.mvp, false, trans);
+		this.trans = trans;
+		this.swapYZ(this.swap);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		// Complete the WebGL initializations before drawing
+		gl.useProgram(this.prog);
 		//draw model
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.vertPos);
 		//Texture buffer
-		//gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
-		//gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
-		//gl.enableVertexAttribArray(this.texCoords);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
+		gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.texCoords);
 		//draw triangles
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
@@ -120,14 +137,14 @@ class MeshDrawer {
 	// The argument is an HTML IMG element containing the texture data.
 	setTexture(img) 
 	{
-		gl.useProgram(this.prog);
+		//gl.useProgram(this.prog);
 		//Bind the texture
-		gl.activeTexture(gl.TEXTURE1);
+		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
-		gl.uniform1i(this.sampler, 1);
 		// You can set the texture image data using the following command.
 		this.img = img; 
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+		gl.uniform1i(this.sampler, 1);
 		// Now that we have a texture, it might be a good idea to set
 		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
 		gl.generateMipmap(gl.TEXTURE_2D)
@@ -135,39 +152,29 @@ class MeshDrawer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-		this.showTexture(true);
+		//pass in if button is toggled or not when texture initialized
+		if(this.texButton == null)
+		{
+			this.showTexture(true);
+		}
+		else
+		{
+			this.showTexture(this.texButton);
+		}
 	}
 
 	// This method is called when the user changes the state of the
 	// "Show Texture" checkbox. 
 	// The argument is a boolean that indicates if the checkbox is checked.
-	showTexture(show) {
+	showTexture(show) 
+	{
+		this.texButton = show;
 		// set the uniform parameter(s) of the fragment shader to specify if it should use the texture.
-		if (show) {
-			gl.activeTexture(gl.TEXTURE1);
-			gl.bindTexture(gl.TEXTURE_2D, this.texture);
-			gl.uniform1i(this.sampler, 1);
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, this.img);
-			//Texture buffer
-			gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
-			gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
-			gl.enableVertexAttribArray(this.texCoords);
-		}
-		else 
-		{
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, this.texture);
-			gl.uniform1i(this.sampler, 0);
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-				new Uint8Array([255, 0, 0, 255]));
-			gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
-			gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
-			gl.enableVertexAttribArray(this.texCoords);
-		}
+		gl.useProgram(this.prog);
+		gl.uniform1i(this.showTex, show);
 	}
 }
+// Vertex shader source code
 var MeshVS = `
 	attribute vec3 pos;
 	attribute vec2 txc;
@@ -179,14 +186,21 @@ var MeshVS = `
 		texCoords=txc;
 	}
 `;
-// Fragment shader source code
-//gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
+// Fragment shader source code;
 var MeshFS = `
 	precision mediump float;
 	varying vec2 texCoords;
 	uniform sampler2D tex;
+	uniform bool textureShown;
 	void main()
 	{
-		gl_FragColor = texture2D(tex,texCoords);
+		if(textureShown == true)
+		{
+			gl_FragColor = texture2D(tex,texCoords);
+		}
+		else
+		{
+			gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
+		}
 	}
 `;
