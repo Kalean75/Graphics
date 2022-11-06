@@ -45,9 +45,16 @@ class MeshDrawer
 		//this.texture2 = gl.createTexture();
 		// Get the ids of the uniform variables in the shaders
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
+		//texture sampler
 		this.sampler = gl.getUniformLocation(this.prog, 'sampler');
+		//normals
 		this.normals = gl.getUniformLocation(this.prog, 'normals');
+		//show texture
 		this.showTex = gl.getUniformLocation(this.prog, 'textureShown');
+		//light direction
+		this.lightDir= gl.getUniformLocation(this.prog, 'lightDirection');
+		//shininess
+		this.shininess = gl.getUniformLocation(this.prog, 'shininess');
 		// Get the ids of the vertex attributes tex coordinates and normals in the shaders
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
 		this.texCoords = gl.getAttribLocation(this.prog, 'txc');
@@ -124,14 +131,13 @@ class MeshDrawer
 	// transformation matrix, which is the inverse-transpose of matrixMV.
 	draw( matrixMVP, matrixMV, matrixNormal )
 	{
+		// Complete the WebGL initializations before drawing
 		gl.useProgram(this.prog);
 		//this.normal = MatrixMult(matrixMV,matrixNormal);
 		this.trans = matrixMVP;
-		this.matrixNormal = matrixNormal;
+		this.matrixNormal = MatrixMult(matrixMV,matrixNormal);
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
-		// Complete the WebGL initializations before drawing
-		//gl.useProgram(this.prog);
 		//draw model
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
@@ -142,8 +148,8 @@ class MeshDrawer
 		gl.enableVertexAttribArray(this.texCoords);
 		//normals
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.normbuffer);
-		gl.vertexAttribPointer(this.norm, 2, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(this.norm);
+		//gl.vertexAttribPointer(this.norm, 2, gl.FLOAT, false, 0, 0);
+		//gl.enableVertexAttribArray(this.norm);
 		//draw triangles
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
@@ -192,14 +198,16 @@ class MeshDrawer
 	// This method is called to set the incoming light direction
 	setLightDir( x, y, z )
 	{
+		
 		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the light direction.
-		//gl.uniform3fv(reverseLightDirectionLocation, ([x, y, z]));
+		gl.uniform3fv(this.lightDir, new Float32Array([x,y,z]));
 	}
 	
 	// This method is called to set the shininess of the material
 	setShininess( shininess )
 	{
 		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the shininess.
+		gl.uniform1i(this.shininess,shininess);
 	}
 }
 // Vertex shader source code
@@ -207,7 +215,6 @@ var MeshVS = `
 	attribute vec3 pos;
 	attribute vec2 txc;
 	attribute vec3 norm;
-	
 	uniform mat4 mvp;
 	uniform mat4 normals;
 	varying vec2 texCoords;
@@ -221,10 +228,13 @@ var MeshVS = `
 var MeshFS = `
 	precision mediump float;
 	varying vec2 texCoords;
+	uniform vec3 lightDirection;
 	uniform sampler2D tex;
 	uniform bool textureShown;
+	uniform float shininess;
 	void main()
 	{
+		vec3 revLightdirection = normalize(-lightDirection);
 		if(textureShown == true)
 		{
 			gl_FragColor = texture2D(tex,texCoords);
