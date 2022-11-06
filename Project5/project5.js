@@ -119,10 +119,9 @@ class MeshDrawer
 	draw( matrixMVP, matrixMV, matrixNormal )
 	{
 		// [TO-DO] Complete the WebGL initializations before drawing
-
-		/*gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles );
+		gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles );
 		gl.useProgram(this.prog);
-		this.trans = trans;
+		this.trans = MatrixMult(matrixMVP,matrixMV);
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		// Complete the WebGL initializations before drawing
@@ -136,7 +135,7 @@ class MeshDrawer
 		gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.texCoords);
 		//draw triangles
-		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);*/
+		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
 	
 	// This method is called to set the texture of the mesh.
