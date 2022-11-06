@@ -51,6 +51,7 @@ class MeshDrawer
 		// Get the ids of the vertex attributes and tex coordinates in the shaders
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
 		this.texCoords = gl.getAttribLocation(this.prog, 'txc');
+		this.normals = gl.getAttribLocation(this.prog, 'normals');
 		// Create the buffer objects
 		this.vertbuffer = gl.createBuffer();
 		this.texCoordbuffer = gl.createBuffer();
@@ -92,7 +93,8 @@ class MeshDrawer
 		//this.mvp = gl.getUniformLocation(this.prog, 'mvp');
 		this.swap = swap;
 		gl.useProgram(this.prog);
-		var trans2 = [
+		var trans2 = 
+		[
 			1,0,0,0,
 			0,0,1,0,
 			0,1,0,0,
@@ -121,7 +123,8 @@ class MeshDrawer
 		// [TO-DO] Complete the WebGL initializations before drawing
 		gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles );
 		gl.useProgram(this.prog);
-		this.trans = MatrixMult(matrixMVP,matrixMV);
+		this.normal = MatrixMult(matrixMVP,matrixMV);
+		this.trans = matrixMVP;
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		// Complete the WebGL initializations before drawing
@@ -202,6 +205,7 @@ class MeshDrawer
 var MeshVS = `
 	attribute vec3 pos;
 	attribute vec2 txc;
+	attribute vec3 normals;
 	uniform mat4 mvp;
 	varying vec2 texCoords;
 	void main()
