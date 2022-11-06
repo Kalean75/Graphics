@@ -120,7 +120,7 @@ class MeshDrawer
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		// Complete the WebGL initializations before drawing
-		gl.useProgram(this.prog);
+		//gl.useProgram(this.prog);
 		//draw model
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);

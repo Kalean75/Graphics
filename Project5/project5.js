@@ -37,8 +37,7 @@ class MeshDrawer
 	// The constructor is a good place for taking care of the necessary initializations.
 	constructor()
 	{
-		// [TO-DO] initializations
-				// initializations
+		// initializations
 		// Compile the shader program
 		this.swap = false;
 		this.prog = InitShaderProgram(MeshVS, MeshFS);
@@ -46,15 +45,17 @@ class MeshDrawer
 		//this.texture2 = gl.createTexture();
 		// Get the ids of the uniform variables in the shaders
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
-		this.sampler = gl.getUniformLocation(this.prog, 'sampler')
-		this.showTex = gl.getUniformLocation(this.prog, 'textureShown')
-		// Get the ids of the vertex attributes and tex coordinates in the shaders
+		this.sampler = gl.getUniformLocation(this.prog, 'sampler');
+		this.normals = gl.getUniformLocation(this.prog, 'normals');
+		this.showTex = gl.getUniformLocation(this.prog, 'textureShown');
+		// Get the ids of the vertex attributes tex coordinates and normals in the shaders
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
 		this.texCoords = gl.getAttribLocation(this.prog, 'txc');
-		this.normals = gl.getAttribLocation(this.prog, 'normals');
+		this.norm = gl.getAttribLocation(this.prog, 'norm');
 		// Create the buffer objects
 		this.vertbuffer = gl.createBuffer();
 		this.texCoordbuffer = gl.createBuffer();
+		this.normbuffer = gl.createBuffer();
 		
 	}
 	
@@ -79,6 +80,9 @@ class MeshDrawer
 		//texture
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+		//normals
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normbuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 		this.numTriangles = vertPos.length / 3;
 		//this.numTriangles = vertPos.length / 3;
 	}
@@ -89,8 +93,6 @@ class MeshDrawer
 	swapYZ( swap )
 	{
 		// [TO-DO] Set the uniform parameter(s) of the vertex shader
-				// Set the uniform parameter(s) of the vertex shader
-		//this.mvp = gl.getUniformLocation(this.prog, 'mvp');
 		this.swap = swap;
 		gl.useProgram(this.prog);
 		var trans2 = 
@@ -105,11 +107,13 @@ class MeshDrawer
 		{
 			// Swap Axis
 			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(this.trans,trans2));
+			gl.uniformMatrix4fv(this.normal, false, this.matrixNormal);
 		}
 		else
 		{
 			//Keep Axis
 			gl.uniformMatrix4fv(this.mvp, false, this.trans);
+			gl.uniformMatrix4fv(this.normal, false, this.matrixNormal);
 		}
 	}
 	
@@ -120,15 +124,14 @@ class MeshDrawer
 	// transformation matrix, which is the inverse-transpose of matrixMV.
 	draw( matrixMVP, matrixMV, matrixNormal )
 	{
-		// [TO-DO] Complete the WebGL initializations before drawing
-		gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles );
 		gl.useProgram(this.prog);
-		this.normal = MatrixMult(matrixMVP,matrixMV);
+		//this.normal = MatrixMult(matrixMV,matrixNormal);
 		this.trans = matrixMVP;
+		this.matrixNormal = matrixNormal;
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		// Complete the WebGL initializations before drawing
-		gl.useProgram(this.prog);
+		//gl.useProgram(this.prog);
 		//draw model
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
@@ -137,6 +140,10 @@ class MeshDrawer
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordbuffer);
 		gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.texCoords);
+		//normals
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normbuffer);
+		gl.vertexAttribPointer(this.norm, 2, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.norm);
 		//draw triangles
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
@@ -145,13 +152,6 @@ class MeshDrawer
 	// The argument is an HTML IMG element containing the texture data.
 	setTexture( img )
 	{
-		// [TO-DO] Bind the texture
-
-		// You can set the texture image data using the following command.
-		//gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img );
-
-		// [TO-DO] Now that we have a texture, it might be a good idea to set
-		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
 		//Bind the texture
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -193,6 +193,7 @@ class MeshDrawer
 	setLightDir( x, y, z )
 	{
 		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the light direction.
+		//gl.uniform3fv(reverseLightDirectionLocation, ([x, y, z]));
 	}
 	
 	// This method is called to set the shininess of the material
@@ -205,8 +206,10 @@ class MeshDrawer
 var MeshVS = `
 	attribute vec3 pos;
 	attribute vec2 txc;
-	attribute vec3 normals;
+	attribute vec3 norm;
+	
 	uniform mat4 mvp;
+	uniform mat4 normals;
 	varying vec2 texCoords;
 	void main()
 	{
