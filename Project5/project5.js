@@ -117,12 +117,14 @@ class MeshDrawer
 			// Swap Axis
 			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(trans2,this.trans));
 			gl.uniformMatrix4fv(this.normals, false, this.matrixNormal);
+			gl.uniformMatrix4fv(this.mv, false, this.matrixNormal);
 		}
 		else
 		{
 			//Keep Axis
 			gl.uniformMatrix4fv(this.mvp, false, this.trans);
-			gl.uniformMatrix4fv(this.normals, false, this.matrixNormal);
+			gl.uniformMatrix4fv(this.normals, false, this.matrixMV);
+			gl.uniformMatrix4fv(this.mv, false, this.matrixMV);
 		}
 	}
 	
@@ -141,6 +143,7 @@ class MeshDrawer
 
 		this.trans = matrixMVP;
 		this.matrixNormal = matrixNormal;
+		this.matrixMV = matrixMV;
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		//draw model
@@ -230,43 +233,71 @@ var MeshVS = `
 	uniform mat4 mv;
 	uniform mat4 normals;
 	
-	uniform vec3 lightDirection;
 	varying vec2 texCoords;
-	varying vec3 Lighting;
+	varying vec3 fn;
+	varying vec3 vertPos;
 	void main()
 	{
+		fn = vec3(normals * vec4(norm, 0.0));
+  		vec4 vertPos4 = mv * vec4(pos, 1.0);
+  		vertPos = vec3(vertPos4) / vertPos4.w;
+
 		gl_Position = mvp * vec4(pos,1);
 		texCoords=txc;
 
-		vec3 ambientLight = vec3(0.2, 0.2, 0.2);
-		vec3 directionalLightColor = vec3(1, 1, 1);
-		vec4 transformedNormal = normals * vec4(norm, 1.0);
-		float directional = max(dot(transformedNormal.xyz, normalize(-lightDirection)), 0.0);
-		Lighting = ambientLight + (directionalLightColor * directional);		
 	}
 `;
 // Fragment shader source code;
 var MeshFS = `
 	precision mediump float;
-	varying vec2 texCoords;
-	varying vec3 Lighting;
+	varying vec2 texCoords; 
 
 	uniform sampler2D tex;
 	uniform bool textureShown;
+
+	varying vec3 fn;
+	varying vec3 vertPos;
+
 	uniform float shininess;
+	uniform vec3 lightDirection;
+
+vec4 ambientColor = vec4(0.01, 0.0, 0.0, 1.0);
+vec4 diffuseColor = vec4(0.25, 0.50, 0.0, 1.0);
+vec4 specularColor = vec4(1.0, 1.0, 1.0, 1.0);
+vec4 lightColor = vec4(1.0, 1.0, 1.0, 1.0);
+float irradiPerp = 1.0;
+
+vec3 blinnPhongBRDF(vec3 lightDir, vec3 viewDir, vec3 normal, vec3 phongDiffuseCol, vec3 phongSpecularCol, float phongShininess) 
+{
+  vec3 color = phongDiffuseCol;
+  vec3 halfDir = normalize(viewDir + lightDir);
+  float specDot = max(dot(halfDir, normal), 0.0);
+  color += pow(specDot, phongShininess) * phongSpecularCol;
+  return color;
+}
 
 	void main()
 	{
+		vec3 lightDir = normalize(-lightDirection);
+  		vec3 viewDir = normalize(-vertPos);
+ 		vec3 n = normalize(fn);
+  		vec3 radiance = ambientColor.rgb;
+  
+  radiance = pow(radiance, vec3(1.0 / 2.2) ); 
 		if(textureShown == true)
 		{
 			vec4 texelColor = texture2D(tex, texCoords);
-			gl_FragColor = vec4(texelColor.rgb * Lighting, texelColor.a);
+			gl_FragColor = vec4(texelColor.rgb, texelColor.a);
 		}
 		else
 		{
-			 vec4 texelColor = vec4(1,1,1,1);
-			gl_FragColor = vec4(texelColor.rgb * Lighting, texelColor.a);
+			vec4 texelColor = vec4(1,1,1,1);
+			float irradiance = max(dot(lightDir, n), 0.0) * irradiPerp;
+			if(irradiance > 0.0) {
+			  vec3 brdf = blinnPhongBRDF(lightDir, viewDir, n, texelColor.rgb, texelColor.rgb, shininess);
+			  radiance += brdf * irradiance * lightColor.rgb;
+			}
+			gl_FragColor = vec4(radiance.rgb, 1.0);
 		}
 	}
 `;
-
