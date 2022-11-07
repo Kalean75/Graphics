@@ -12,9 +12,9 @@ function GetModelViewMatrix( translationX, translationY, translationZ, rotationX
 			0, 0, 0, 1
 		];
 		var rotY = [
-			Math.cos(rotationY), 0, Math.sin(rotationY), 0,
+			Math.cos(rotationY), 0, -Math.sin(rotationY), 0,
 			0, 1, 0, 0,
-			-Math.sin(rotationY), 0, Math.cos(rotationY), 0,
+			Math.sin(rotationY), 0, Math.cos(rotationY), 0,
 			0, 0, 0, 1
 		];
 		var trans = [
@@ -115,7 +115,7 @@ class MeshDrawer
 		if (swap) 
 		{
 			// Swap Axis
-			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(this.trans,trans2));
+			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(trans2,this.trans));
 			gl.uniformMatrix4fv(this.normals, false, this.matrixNormal);
 		}
 		else
@@ -238,10 +238,10 @@ var MeshVS = `
 		gl_Position = mvp * vec4(pos,1);
 		texCoords=txc;
 
-		vec3 ambientLight = vec3(1, 1, 1);
+		vec3 ambientLight = vec3(0.2, 0.2, 0.2);
 		vec3 directionalLightColor = vec3(1, 1, 1);
 		vec4 transformedNormal = normals * vec4(norm, 1.0);
-		float directional = max(dot(transformedNormal.xyz, normalize(lightDirection)), 0.0);
+		float directional = max(dot(transformedNormal.xyz, normalize(-lightDirection)), 0.0);
 		Lighting = ambientLight + (directionalLightColor * directional);		
 	}
 `;

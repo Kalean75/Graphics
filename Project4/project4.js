@@ -16,9 +16,9 @@ function GetModelViewProjection(projectionMatrix, translationX, translationY, tr
 		0, 0, 0, 1
 	];
 	var rotY = [
-		Math.cos(rotationY), 0, Math.sin(rotationY), 0,
+		Math.cos(rotationY), 0, -Math.sin(rotationY), 0,
 		0, 1, 0, 0,
-		-Math.sin(rotationY), 0, Math.cos(rotationY), 0,
+		Math.sin(rotationY), 0, Math.cos(rotationY), 0,
 		0, 0, 0, 1
 	];
 	var trans = [
