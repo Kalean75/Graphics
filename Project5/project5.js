@@ -49,6 +49,8 @@ class MeshDrawer
 		this.sampler = gl.getUniformLocation(this.prog, 'sampler');
 		//normals
 		this.normals = gl.getUniformLocation(this.prog, 'normals');
+		//model view
+		this.mv = gl.getUniformLocation(this.prog, 'mv');
 		//show texture
 		this.showTex = gl.getUniformLocation(this.prog, 'textureShown');
 		//light direction
@@ -97,11 +99,11 @@ class MeshDrawer
 	// This method is called when the user changes the state of the
 	// "Swap Y-Z Axes" checkbox. 
 	// The argument is a boolean that indicates if the checkbox is checked.
-	swapYZ( swap )
+	swapYZ(swap)
 	{
-		// [TO-DO] Set the uniform parameter(s) of the vertex shader
-		this.swap = swap;
 		gl.useProgram(this.prog);
+		// Set the uniform parameter(s) of the vertex shader
+		this.swap = swap;
 		var trans2 = 
 		[
 			1,0,0,0,
@@ -114,13 +116,13 @@ class MeshDrawer
 		{
 			// Swap Axis
 			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(this.trans,trans2));
-			gl.uniformMatrix4fv(this.normal, false, this.matrixNormal);
+			gl.uniformMatrix4fv(this.normals, false, this.matrixNormal);
 		}
 		else
 		{
 			//Keep Axis
 			gl.uniformMatrix4fv(this.mvp, false, this.trans);
-			gl.uniformMatrix4fv(this.normal, false, this.matrixNormal);
+			gl.uniformMatrix4fv(this.normals, false, this.matrixNormal);
 		}
 	}
 	
@@ -134,8 +136,11 @@ class MeshDrawer
 		// Complete the WebGL initializations before drawing
 		gl.useProgram(this.prog);
 		//this.normal = MatrixMult(matrixMV,matrixNormal);
+		//p'=Mp
+		//n'= M
+
 		this.trans = matrixMVP;
-		this.matrixNormal = MatrixMult(matrixMV,matrixNormal);
+		this.matrixNormal = matrixNormal;
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		//draw model
@@ -148,15 +153,15 @@ class MeshDrawer
 		gl.enableVertexAttribArray(this.texCoords);
 		//normals
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.normbuffer);
-		//gl.vertexAttribPointer(this.norm, 2, gl.FLOAT, false, 0, 0);
-		//gl.enableVertexAttribArray(this.norm);
+		gl.vertexAttribPointer(this.norm, 2, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.norm);
 		//draw triangles
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
 	
 	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
-	setTexture( img )
+	setTexture(img)
 	{
 		//Bind the texture
 		gl.activeTexture(gl.TEXTURE0);
@@ -198,50 +203,70 @@ class MeshDrawer
 	// This method is called to set the incoming light direction
 	setLightDir( x, y, z )
 	{
-		
-		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the light direction.
+		gl.useProgram(this.prog);
+		//set the uniform parameter(s) of the fragment shader to specify the light direction.
 		gl.uniform3fv(this.lightDir, new Float32Array([x,y,z]));
 	}
 	
 	// This method is called to set the shininess of the material
 	setShininess( shininess )
 	{
-		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the shininess.
+		gl.useProgram(this.prog);
+		// set the uniform parameter(s) of the fragment shader to specify the shininess.
+		//Blinn C=I(cosTHETAKd+Ks(cos(shininess)^alpha))
 		gl.uniform1i(this.shininess,shininess);
 	}
 }
+//		C = I(n*w) * Kd
 // Vertex shader source code
+//P'=Mp
+//n'=Mtn
 var MeshVS = `
 	attribute vec3 pos;
 	attribute vec2 txc;
 	attribute vec3 norm;
+
 	uniform mat4 mvp;
+	uniform mat4 mv;
 	uniform mat4 normals;
+	
+	uniform vec3 lightDirection;
 	varying vec2 texCoords;
+	varying vec3 Lighting;
 	void main()
 	{
 		gl_Position = mvp * vec4(pos,1);
 		texCoords=txc;
+
+		vec3 ambientLight = vec3(1, 1, 1);
+		vec3 directionalLightColor = vec3(1, 1, 1);
+		vec4 transformedNormal = normals * vec4(norm, 1.0);
+		float directional = max(dot(transformedNormal.xyz, normalize(lightDirection)), 0.0);
+		Lighting = ambientLight + (directionalLightColor * directional);		
 	}
 `;
 // Fragment shader source code;
 var MeshFS = `
 	precision mediump float;
 	varying vec2 texCoords;
-	uniform vec3 lightDirection;
+	varying vec3 Lighting;
+
 	uniform sampler2D tex;
 	uniform bool textureShown;
 	uniform float shininess;
+
 	void main()
 	{
-		vec3 revLightdirection = normalize(-lightDirection);
 		if(textureShown == true)
 		{
-			gl_FragColor = texture2D(tex,texCoords);
+			vec4 texelColor = texture2D(tex, texCoords);
+			gl_FragColor = vec4(texelColor.rgb * Lighting, texelColor.a);
 		}
 		else
 		{
-			gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
+			 vec4 texelColor = vec4(1,1,1,1);
+			gl_FragColor = vec4(texelColor.rgb * Lighting, texelColor.a);
 		}
 	}
 `;
+
