@@ -115,7 +115,7 @@ class MeshDrawer
 		if (swap) 
 		{
 			// Swap Axis
-			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(trans2,this.trans));
+			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(this.trans,trans2));
 			gl.uniformMatrix4fv(this.normals, false, this.matrixNormal);
 			gl.uniformMatrix4fv(this.mv, false, this.matrixNormal);
 		}
@@ -261,8 +261,8 @@ var MeshFS = `
 	uniform float shininess;
 	uniform vec3 lightDirection;
 
-vec4 ambientColor = vec4(0.01, 0.0, 0.0, 1.0);
-vec4 diffuseColor = vec4(0.25, 0.50, 0.0, 1.0);
+vec4 ambientColor = vec4(1, 1, 1, 1);
+vec4 diffuseColor = vec4(0, 0.50, 0.0, 1.0);
 vec4 specularColor = vec4(1.0, 1.0, 1.0, 1.0);
 vec4 lightColor = vec4(1.0, 1.0, 1.0, 1.0);
 float irradiPerp = 1.0;
@@ -287,7 +287,12 @@ vec3 blinnPhongBRDF(vec3 lightDir, vec3 viewDir, vec3 normal, vec3 phongDiffuseC
 		if(textureShown == true)
 		{
 			vec4 texelColor = texture2D(tex, texCoords);
-			gl_FragColor = vec4(texelColor.rgb, texelColor.a);
+			float irradiance = max(dot(lightDir, n), 0.0) * irradiPerp;
+			if(irradiance > 0.0) {
+			  vec3 brdf = blinnPhongBRDF(lightDir, viewDir, n, texelColor.rgb, texelColor.rgb, shininess);
+			  radiance += brdf * irradiance * lightColor.rgb;
+			}
+			gl_FragColor = vec4(radiance, 1.0);
 		}
 		else
 		{
