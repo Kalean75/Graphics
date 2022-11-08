@@ -246,23 +246,17 @@ var MeshVS = `
 	uniform mat4 mvp;
 	uniform mat4 mv;
 	uniform mat3 normals;
-	uniform vec3 lightDirection;
+
 	varying vec2 texCoords;
 	varying vec3 normalPos;
 	varying vec3 viewPos;
-	varying vec3 L, N, E;
 
 	void main()
 	{
 		texCoords=txc;
 		normalPos = vec3(normals * norm);
 		vec4 vertPos4 = mv * vec4(pos, 1.0);
-		viewPos = vec3(vertPos4) / vertPos4.w;
-
-		L = normalize(lightDirection - viewPos);
-		N = normalize(normalPos);
-		E = -normalize(viewPos);
-	
+		viewPos = vec3(vertPos4)/ vertPos4.w;
 		gl_Position = mvp * vec4(pos,1);
 	}
 `;
@@ -282,8 +276,7 @@ var MeshFS = `
 	varying vec2 texCoords;
 	varying vec3 normalPos;
 	varying vec3 viewPos;
-	varying vec3 L, N, E;
-	uniform vec3 lightDir;
+	uniform vec3 lightDirection;
 
 	uniform sampler2D tex;
 	uniform bool textureShown;
@@ -291,41 +284,39 @@ var MeshFS = `
 
 	void main()
 	{
-		vec3 H = normalize(L+E);
-		vec3 I = vec3(1.0,1.0,1.0);
-		float theta = max(dot(L,N), 0.0);
-		float phi = pow(max(dot(N,H),0.0), shininess);
-		if(textureShown == true)
-		{
-			vec4 Kd = texture2D(tex, texCoords);
-			vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
-			vec3 diffuse = Kd.rgb * theta;
-			vec3 specular = vec3(1.0,1.0,1.0)* phi;			
-			if (dot(L, N) <= 0.0)
-			{
-				specular = vec3(0.0, 0.0, 0.0);
-			}
-			gl_FragColor = vec4((I*(ambient+diffuse))+specular,1.0);
-		}
-		else
-		{
-			vec4 Kd = vec4(1.0,1.0,1.0,1.0);
-			vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
-			vec3 diffuse = Kd.rgb * theta;
-			vec3 specular = vec3(1.0,1.0,1.0)* phi;			
-			if (dot(L, N) <= 0.0)
-			{
-				specular = vec3(0.0, 0.0, 0.0);
-			}
-			gl_FragColor = vec4((I*(ambient+diffuse))+specular,1.0);
-		}
-	}
-	
-`;
-/*		vec3 v = -normalize(viewPos);
+		
+		vec3 v = -normalize(viewPos);
 		vec3 l = normalize(lightDirection * viewPos);
 		vec3 n = normalize(normalPos);
 		vec3 h = normalize(l + v);
+		vec3 ks = vec3(1,1,1);
 		vec3 I = vec3(1,1,1);
-*/
+		float theta = max(dot(l,n), 0.0);
+		float phi = pow(max(dot(n,h),0.0), shininess);
+		if(textureShown == true)
+		{
+			vec4 Kd = texture2D(tex, texCoords);
+			vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
+			vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
+			vec3 specular = Kd.rgb* phi;			
+			if (dot(l, n) < 0.0)
+			{
+				specular = vec3(0.0, 0.0, 0.0);
+			}
+			gl_FragColor = vec4(ambient+diffuse+specular,1.0);
+		}
+		else
+		{
+			 vec4 Kd = vec4(1.0,1.0,1.0,1.0);
+			 vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
+			 vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
+			 vec3 specular = Kd.rgb* phi;
+			 if (dot(l, n) < 0.0)
+			 {
+				 specular = vec3(0.0, 0.0, 0.0);
+			 }
+			gl_FragColor = vec4(ambient+diffuse+specular,1.0);
+		}
+	}
+`;
 
