@@ -141,8 +141,21 @@ class MeshDrawer
 
 		this.trans = matrixMVP;
 		var mn = matrixNormal;
-		var transpose = [ mn[0],mn[3],mn[6], mn[1],mn[4],mn[7], mn[2],mn[5],mn[8] ];
-		var inv = inverse(transpose);
+		var tp = [ mn[0],mn[3],mn[6], mn[1],mn[4],mn[7], mn[2],mn[5],mn[8] ];
+
+		var determinant = (tp[0] *tp[4]*tp[8]+tp[1]*tp[5]*tp[6]+tp[2]*tp[3]*tp[7] -(tp[2]*tp[4]*tp[6]+tp[1]*tp[3]*tp[8]+tp[0]*tp[5]*tp[7]));
+	var cf1 =((tp[4]*tp[8]-tp[5]*tp[7]));
+	var cf2 =((tp[3]*tp[8]-tp[5]*tp[6]));
+	var cf3 =((tp[3]*tp[7]-tp[4]*tp[6]));
+	var cf4 =((tp[1]*tp[8]-tp[2]*tp[7]));
+	var cf5 =((tp[0]*tp[8]-tp[2]*tp[6]));
+	var cf6 =((tp[0]*tp[7]-tp[1]*tp[6]));
+	var cf7 =((tp[1]*tp[5]-tp[2]*tp[4]));
+	var cf8 =((tp[0]*tp[5]-tp[3]*tp[2]));
+	var cf9 =((tp[0]*tp[4]-tp[1]*tp[3]));
+
+	var inv = [cf1/determinant, -cf4/determinant,cf7/determinant,-cf2/determinant,cf5/determinant,-cf8/determinant,cf3/determinant,cf6/determinant,cf9/determinant];
+
 		this.matrixNormal = inv;
 		//0 3 6
 		//1 4 7
@@ -233,17 +246,23 @@ var MeshVS = `
 	uniform mat4 mvp;
 	uniform mat4 mv;
 	uniform mat3 normals;
-
+	uniform vec3 lightDirection;
 	varying vec2 texCoords;
 	varying vec3 normalPos;
 	varying vec3 viewPos;
+	varying vec3 L, N, E;
 
 	void main()
 	{
 		texCoords=txc;
 		normalPos = vec3(normals * norm);
 		vec4 vertPos4 = mv * vec4(pos, 1.0);
-		viewPos = vec3(vertPos4);
+		viewPos = vec3(vertPos4) / vertPos4.w;
+
+		L = normalize(lightDirection - viewPos);
+		N = normalize(normalPos);
+		E = -normalize(viewPos);
+	
 		gl_Position = mvp * vec4(pos,1);
 	}
 `;
@@ -263,7 +282,8 @@ var MeshFS = `
 	varying vec2 texCoords;
 	varying vec3 normalPos;
 	varying vec3 viewPos;
-	uniform vec3 lightDirection;
+	varying vec3 L, N, E;
+	uniform vec3 lightDir;
 
 	uniform sampler2D tex;
 	uniform bool textureShown;
@@ -271,30 +291,41 @@ var MeshFS = `
 
 	void main()
 	{
-		vec3 v = -normalize(viewPos);
-		vec3 l = normalize(lightDirection * viewPos);
-		vec3 n = normalize(normalPos);
-		vec3 h = normalize(l + v);
-		vec3 ks = vec3(1,1,1);
-		vec3 I = vec3(1,1,1);
-		float theta = max(dot(l,n), 0.0);
-		float phi = pow(max(dot(n,h),0.0), shininess);
+		vec3 H = normalize(L+E);
+		vec3 I = vec3(1.0,1.0,1.0);
+		float theta = max(dot(L,N), 0.0);
+		float phi = pow(max(dot(N,H),0.0), shininess);
 		if(textureShown == true)
 		{
 			vec4 Kd = texture2D(tex, texCoords);
-			vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
-			vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
-			vec3 specular = vec3(1.0,1.0,1.0) * Kd.rgb* phi;
-			gl_FragColor = Kd*vec4(ambient+diffuse+specular,1.0);
+			vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
+			vec3 diffuse = Kd.rgb * theta;
+			vec3 specular = vec3(1.0,1.0,1.0)* phi;			
+			if (dot(L, N) <= 0.0)
+			{
+				specular = vec3(0.0, 0.0, 0.0);
+			}
+			gl_FragColor = vec4((I*(ambient+diffuse))+specular,1.0);
 		}
 		else
 		{
-			 vec4 Kd = vec4(1.0,1.0,1.0,1.0);
-			 vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
-			 vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
-			 vec3 specular = vec3(1.0,1.0,1.0) * Kd.rgb* phi;
-			gl_FragColor = Kd*vec4(ambient+diffuse+specular,1.0);
+			vec4 Kd = vec4(1.0,1.0,1.0,1.0);
+			vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
+			vec3 diffuse = Kd.rgb * theta;
+			vec3 specular = vec3(1.0,1.0,1.0)* phi;			
+			if (dot(L, N) <= 0.0)
+			{
+				specular = vec3(0.0, 0.0, 0.0);
+			}
+			gl_FragColor = vec4((I*(ambient+diffuse))+specular,1.0);
 		}
 	}
+	
 `;
+/*		vec3 v = -normalize(viewPos);
+		vec3 l = normalize(lightDirection * viewPos);
+		vec3 n = normalize(normalPos);
+		vec3 h = normalize(l + v);
+		vec3 I = vec3(1,1,1);
+*/
 
