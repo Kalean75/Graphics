@@ -28,8 +28,6 @@ function GetModelViewMatrix( translationX, translationY, translationZ, rotationX
 	//var mv = trans;
 	return mv;
 }
-
-
 // [TO-DO] Complete the implementation of the following class.
 
 class MeshDrawer
@@ -116,14 +114,14 @@ class MeshDrawer
 		{
 			// Swap Axis
 			gl.uniformMatrix4fv(this.mvp, false, MatrixMult(this.trans,trans2));
-			gl.uniformMatrix4fv(this.normals, false, this.matrixNormal);
-			gl.uniformMatrix4fv(this.mv, false, this.matrixNormal);
+			gl.uniformMatrix3fv(this.normals, false, this.matrixNormal);
+			gl.uniformMatrix4fv(this.mv, false, this.matrixMV);
 		}
 		else
 		{
 			//Keep Axis
 			gl.uniformMatrix4fv(this.mvp, false, this.trans);
-			gl.uniformMatrix4fv(this.normals, false, this.matrixMV);
+			gl.uniformMatrix3fv(this.normals, false, this.matrixNormal);
 			gl.uniformMatrix4fv(this.mv, false, this.matrixMV);
 		}
 	}
@@ -142,7 +140,13 @@ class MeshDrawer
 		//n'= M
 
 		this.trans = matrixMVP;
-		this.matrixNormal = matrixNormal;
+		var mn = matrixNormal;
+		var transpose = [ mn[0],mn[3],mn[6], mn[1],mn[4],mn[7], mn[2],mn[5],mn[8] ];
+		var inv = inverse(transpose);
+		this.matrixNormal = inv;
+		//0 3 6
+		//1 4 7
+		//2 5 8
 		this.matrixMV = matrixMV;
 		this.swapYZ(this.swap);
 		gl.clear(gl.COLOR_BUFFER_BIT);
@@ -160,9 +164,7 @@ class MeshDrawer
 		gl.enableVertexAttribArray(this.norm);
 		//draw triangles
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
-	}
-	
-	// This method is called to set the texture of the mesh.
+	}	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
 	setTexture(img)
 	{
@@ -216,8 +218,7 @@ class MeshDrawer
 	{
 		gl.useProgram(this.prog);
 		// set the uniform parameter(s) of the fragment shader to specify the shininess.
-		//Blinn C=I(cosTHETAKd+Ks(cos(shininess)^alpha))
-		gl.uniform1i(this.shininess,shininess);
+		gl.uniform1f(this.shininess,shininess);
 	}
 }
 //		C = I(n*w) * Kd
@@ -231,78 +232,69 @@ var MeshVS = `
 
 	uniform mat4 mvp;
 	uniform mat4 mv;
-	uniform mat4 normals;
-	
+	uniform mat3 normals;
+
 	varying vec2 texCoords;
-	varying vec3 fn;
-	varying vec3 vertPos;
+	varying vec3 normalPos;
+	varying vec3 viewPos;
+
 	void main()
 	{
-		fn = vec3(normals * vec4(norm, 0.0));
-  		vec4 vertPos4 = mv * vec4(pos, 1.0);
-  		vertPos = vec3(vertPos4) / vertPos4.w;
-
-		gl_Position = mvp * vec4(pos,1);
 		texCoords=txc;
-
+		normalPos = vec3(normals * norm);
+		vec4 vertPos4 = mv * vec4(pos, 1.0);
+		viewPos = vec3(vertPos4);
+		gl_Position = mvp * vec4(pos,1);
 	}
 `;
 // Fragment shader source code;
+//ks specular reflection constant light color(white)
+//kd diffuse constant Material color
+//ka ambient reflection constant
+//alpha, shininess
+//h angle between light dir and view dir
+// h  normalize(view + lightDir);
+//phi angle between normal and half angle
+//cos phi = dot(n, h)
+//cost(theta) = normal*lightDir
+// C = I(dot(n,lightDir)Kd+Ks*dot(n,h)^shininess) + ambientLight*Kd
 var MeshFS = `
 	precision mediump float;
-	varying vec2 texCoords; 
+	varying vec2 texCoords;
+	varying vec3 normalPos;
+	varying vec3 viewPos;
+	uniform vec3 lightDirection;
 
 	uniform sampler2D tex;
 	uniform bool textureShown;
-
-	varying vec3 fn;
-	varying vec3 vertPos;
-
 	uniform float shininess;
-	uniform vec3 lightDirection;
-
-vec4 ambientColor = vec4(1, 1, 1, 1);
-vec4 diffuseColor = vec4(0, 0.50, 0.0, 1.0);
-vec4 specularColor = vec4(1.0, 1.0, 1.0, 1.0);
-vec4 lightColor = vec4(1.0, 1.0, 1.0, 1.0);
-float irradiPerp = 1.0;
-
-vec3 blinnPhongBRDF(vec3 lightDir, vec3 viewDir, vec3 normal, vec3 phongDiffuseCol, vec3 phongSpecularCol, float phongShininess) 
-{
-  vec3 color = phongDiffuseCol;
-  vec3 halfDir = normalize(viewDir + lightDir);
-  float specDot = max(dot(halfDir, normal), 0.0);
-  color += pow(specDot, phongShininess) * phongSpecularCol;
-  return color;
-}
 
 	void main()
 	{
-		vec3 lightDir = normalize(-lightDirection);
-  		vec3 viewDir = normalize(-vertPos);
- 		vec3 n = normalize(fn);
-  		vec3 radiance = ambientColor.rgb;
-  
-  radiance = pow(radiance, vec3(1.0 / 2.2) ); 
+		vec3 v = -normalize(viewPos);
+		vec3 l = normalize(lightDirection * viewPos);
+		vec3 n = normalize(normalPos);
+		vec3 h = normalize(l + v);
+		vec3 ks = vec3(1,1,1);
+		vec3 I = vec3(1,1,1);
+		float theta = max(dot(l,n), 0.0);
+		float phi = pow(max(dot(n,h),0.0), shininess);
 		if(textureShown == true)
 		{
-			vec4 texelColor = texture2D(tex, texCoords);
-			float irradiance = max(dot(lightDir, n), 0.0) * irradiPerp;
-			if(irradiance > 0.0) {
-			  vec3 brdf = blinnPhongBRDF(lightDir, viewDir, n, texelColor.rgb, texelColor.rgb, shininess);
-			  radiance += brdf * irradiance * lightColor.rgb;
-			}
-			gl_FragColor = vec4(radiance, 1.0);
+			vec4 Kd = texture2D(tex, texCoords);
+			vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
+			vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
+			vec3 specular = vec3(1.0,1.0,1.0) * Kd.rgb* phi;
+			gl_FragColor = Kd*vec4(ambient+diffuse+specular,1.0);
 		}
 		else
 		{
-			vec4 texelColor = vec4(1,1,1,1);
-			float irradiance = max(dot(lightDir, n), 0.0) * irradiPerp;
-			if(irradiance > 0.0) {
-			  vec3 brdf = blinnPhongBRDF(lightDir, viewDir, n, texelColor.rgb, texelColor.rgb, shininess);
-			  radiance += brdf * irradiance * lightColor.rgb;
-			}
-			gl_FragColor = vec4(radiance.rgb, 1.0);
+			 vec4 Kd = vec4(1.0,1.0,1.0,1.0);
+			 vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
+			 vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
+			 vec3 specular = vec3(1.0,1.0,1.0) * Kd.rgb* phi;
+			gl_FragColor = Kd*vec4(ambient+diffuse+specular,1.0);
 		}
 	}
 `;
+
