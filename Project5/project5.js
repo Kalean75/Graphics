@@ -79,8 +79,7 @@ class MeshDrawer
 	// Note that this method can be called multiple times.
 	setMesh( vertPos, texCoords, normals )
 	{
-		// [TO-DO] Update the contents of the vertex buffer objects.
-				// Update the contents of the vertex buffer objects.
+		// Update the contents of the vertex buffer objects.
 		//Vertex
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPos), gl.STATIC_DRAW);
@@ -140,7 +139,7 @@ class MeshDrawer
 
 		this.trans = matrixMVP;
 		var mn = matrixNormal;
-		var tp = [ mn[0],mn[3],mn[6], mn[1],mn[4],mn[7], mn[2],mn[5],mn[8] ];
+		/*var tp = [ mn[0],mn[3],mn[6], mn[1],mn[4],mn[7], mn[2],mn[5],mn[8] ];
 
 		var determinant = (tp[0] *tp[4]*tp[8]+tp[1]*tp[5]*tp[6]+tp[2]*tp[3]*tp[7] -(tp[2]*tp[4]*tp[6]+tp[1]*tp[3]*tp[8]+tp[0]*tp[5]*tp[7]));
 	var cf1 =((tp[4]*tp[8]-tp[5]*tp[7]));
@@ -153,9 +152,9 @@ class MeshDrawer
 	var cf8 =((tp[0]*tp[5]-tp[3]*tp[2]));
 	var cf9 =((tp[0]*tp[4]-tp[1]*tp[3]));
 
-	var inv = [cf1/determinant, -cf4/determinant,cf7/determinant,-cf2/determinant,cf5/determinant,-cf8/determinant,cf3/determinant,cf6/determinant,cf9/determinant];
+	var inv = [cf1/determinant, -cf4/determinant,cf7/determinant,-cf2/determinant,cf5/determinant,-cf8/determinant,cf3/determinant,cf6/determinant,cf9/determinant];*/
 
-		this.matrixNormal = inv;
+		this.matrixNormal = matrixNormal;
 		//0 3 6
 		//1 4 7
 		//2 5 8
@@ -171,8 +170,8 @@ class MeshDrawer
 		gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.texCoords);
 		//normals
-		gl.bindBuffer(gl.ATTRIBUTE_BUFFER, this.normbuffer);
-		gl.vertexAttribPointer(this.norm, 2, gl.FLOAT, false, 0, 0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normbuffer);
+		gl.vertexAttribPointer(this.norm, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.norm);
 		//draw triangles
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
@@ -270,6 +269,7 @@ var MeshVS = `
 //cos phi = dot(n, h)
 //cost(theta) = normal*lightDir
 // C = I(dot(n,lightDir)Kd+Ks*dot(n,h)^shininess) + ambientLight*Kd
+//c = Itheta(Kd+Ks(pih/theta))
 var MeshFS = `
 	precision mediump float;
 	varying vec2 texCoords;
@@ -284,9 +284,9 @@ var MeshFS = `
 	void main()
 	{
 		
-		vec3 v = -normalize(viewPos * normalPos);
+		vec3 v = -normalize(viewPos);
 		vec3 n = normalize(normalPos);
-		vec3 l = normalize(lightDirection * viewPos);
+		vec3 l = normalize(lightDirection);
 		vec3 h = normalize(l + v);
 		vec4 Ks = vec4(1.0,1.0,1.0,1.0);
 		vec4 I = vec4(1.0,1.0,1.0,1.0);
@@ -295,26 +295,18 @@ var MeshFS = `
 		if(textureShown == true)
 		{
 			vec4 Kd = texture2D(tex, texCoords);
-			vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
+			vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
 			vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
-			vec3 specular = Ks.rgb* phi;			
-			if (dot(l, n) < 0.0)
-			{
-				specular = vec3(0.0, 0.0, 0.0);
-			}
-			gl_FragColor = I*theta*Kd;
+			vec3 specular = Ks.rgb* (phi/theta);
+			gl_FragColor = (I*theta)* (Kd+vec4(specular,1.0)) + vec4(ambient,1.0);
 		}
 		else
 		{
 			 vec4 Kd = vec4(1.0,1.0,1.0,1.0);
-			 vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
+			 vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
 			 vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
-			 vec3 specular = Kd.rgb* phi;
-			 if (dot(l, n) < 0.0)
-			 {
-				 specular = vec3(0.0, 0.0, 0.0);
-			 }
-			gl_FragColor = I*theta*Kd;
+			 vec3 specular = Ks.rgb* (phi/theta);
+			 gl_FragColor = (I*theta)* (Kd+vec4(specular,1.0)) + vec4(ambient,1.0);
 		}
 	}
 `;
