@@ -46,7 +46,7 @@ class MeshDrawer
 		//texture sampler
 		this.sampler = gl.getUniformLocation(this.prog, 'sampler');
 		//normals
-		this.normalMatrix = gl.getUniformLocation(this.prog, 'normals');
+		this.normalMatrix = gl.getUniformLocation(this.prog, 'normalMatrix');
 		//model view
 		this.mv = gl.getUniformLocation(this.prog, 'mv');
 		//show texture
@@ -171,7 +171,7 @@ class MeshDrawer
 		gl.vertexAttribPointer(this.texCoords, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.texCoords);
 		//normals
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.normbuffer);
+		gl.bindBuffer(gl.ATTRIBUTE_BUFFER, this.normbuffer);
 		gl.vertexAttribPointer(this.norm, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.norm);
 		//draw triangles
@@ -244,7 +244,7 @@ var MeshVS = `
 
 	uniform mat4 mvp;
 	uniform mat4 mv;
-	uniform mat3 normals;
+	uniform mat3 normalMatrix;
 
 	varying vec2 texCoords;
 	varying vec3 normalPos;
@@ -253,7 +253,7 @@ var MeshVS = `
 	void main()
 	{
 		texCoords=txc;
-		normalPos = vec3(normals * norm);
+		normalPos = vec3(normalMatrix * norm);
 		vec4 vertPos4 = mv * vec4(pos, 1.0);
 		viewPos = vec3(vertPos4)/ vertPos4.w;
 		gl_Position = mvp * vec4(pos,1);
@@ -284,12 +284,12 @@ var MeshFS = `
 	void main()
 	{
 		
-		vec3 v = -normalize(viewPos);
+		vec3 v = -normalize(viewPos * normalPos);
 		vec3 n = normalize(normalPos);
-		vec3 l = lightDirection * n * viewPos;
+		vec3 l = normalize(lightDirection * viewPos);
 		vec3 h = normalize(l + v);
-		vec3 ks = vec3(1,1,1);
-		vec3 I = vec3(1,1,1);
+		vec4 Ks = vec4(1.0,1.0,1.0,1.0);
+		vec4 I = vec4(1.0,1.0,1.0,1.0);
 		float theta = max(dot(l,n), 0.0);
 		float phi = pow(max(dot(n,h),0.0), shininess);
 		if(textureShown == true)
@@ -297,12 +297,12 @@ var MeshFS = `
 			vec4 Kd = texture2D(tex, texCoords);
 			vec3 ambient = vec3(0.5,0.5,0.5) * Kd.rgb;
 			vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
-			vec3 specular = Kd.rgb* phi;			
+			vec3 specular = Ks.rgb* phi;			
 			if (dot(l, n) < 0.0)
 			{
 				specular = vec3(0.0, 0.0, 0.0);
 			}
-			gl_FragColor = Kd*vec4(ambient+diffuse+specular,1.0);
+			gl_FragColor = I*theta*Kd;
 		}
 		else
 		{
@@ -314,7 +314,7 @@ var MeshFS = `
 			 {
 				 specular = vec3(0.0, 0.0, 0.0);
 			 }
-			gl_FragColor = Kd*vec4(ambient+diffuse+specular,1.0);
+			gl_FragColor = I*theta*Kd;
 		}
 	}
 `;
