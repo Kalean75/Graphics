@@ -138,21 +138,6 @@ class MeshDrawer
 		//n'= M
 
 		this.trans = matrixMVP;
-		var mn = matrixNormal;
-		/*var tp = [ mn[0],mn[3],mn[6], mn[1],mn[4],mn[7], mn[2],mn[5],mn[8] ];
-
-		var determinant = (tp[0] *tp[4]*tp[8]+tp[1]*tp[5]*tp[6]+tp[2]*tp[3]*tp[7] -(tp[2]*tp[4]*tp[6]+tp[1]*tp[3]*tp[8]+tp[0]*tp[5]*tp[7]));
-	var cf1 =((tp[4]*tp[8]-tp[5]*tp[7]));
-	var cf2 =((tp[3]*tp[8]-tp[5]*tp[6]));
-	var cf3 =((tp[3]*tp[7]-tp[4]*tp[6]));
-	var cf4 =((tp[1]*tp[8]-tp[2]*tp[7]));
-	var cf5 =((tp[0]*tp[8]-tp[2]*tp[6]));
-	var cf6 =((tp[0]*tp[7]-tp[1]*tp[6]));
-	var cf7 =((tp[1]*tp[5]-tp[2]*tp[4]));
-	var cf8 =((tp[0]*tp[5]-tp[3]*tp[2]));
-	var cf9 =((tp[0]*tp[4]-tp[1]*tp[3]));
-
-	var inv = [cf1/determinant, -cf4/determinant,cf7/determinant,-cf2/determinant,cf5/determinant,-cf8/determinant,cf3/determinant,cf6/determinant,cf9/determinant];*/
 
 		this.matrixNormal = matrixNormal;
 		//0 3 6
@@ -286,7 +271,7 @@ var MeshFS = `
 		
 		vec3 v = -normalize(viewPos);
 		vec3 n = normalize(normalPos);
-		vec3 l = normalize(lightDirection);
+		vec3 l = lightDirection;
 		vec3 h = normalize(l + v);
 		vec4 Ks = vec4(1.0,1.0,1.0,1.0);
 		vec4 I = vec4(1.0,1.0,1.0,1.0);
@@ -295,18 +280,16 @@ var MeshFS = `
 		if(textureShown == true)
 		{
 			vec4 Kd = texture2D(tex, texCoords);
-			vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
-			vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
-			vec3 specular = Ks.rgb* (phi/theta);
-			gl_FragColor = (I*theta)* (Kd+vec4(specular,1.0)) + vec4(ambient,1.0);
+			vec4 ambient = vec4(vec3(0.2,0.2,0.2) * Kd.rgb,1.0);
+			vec4 specular = vec4(Ks.rgb* (phi/theta),1.0);
+			gl_FragColor = (I*theta)* (Kd+specular) + ambient;
 		}
 		else
 		{
 			 vec4 Kd = vec4(1.0,1.0,1.0,1.0);
-			 vec3 ambient = vec3(0.2,0.2,0.2) * Kd.rgb;
-			 vec3 diffuse = vec3(1.0,1.0,1.0) * Kd.rgb * theta;
-			 vec3 specular = Ks.rgb* (phi/theta);
-			 gl_FragColor = (I*theta)* (Kd+vec4(specular,1.0)) + vec4(ambient,1.0);
+			 vec4 ambient = vec4(vec3(0.2,0.2,0.2) * Kd.rgb,1.0);
+			 vec4 specular = vec4(Ks.rgb* (phi/theta),1.0);
+			 gl_FragColor = (I*theta)* (Kd+specular) + ambient;
 		}
 	}
 `;
