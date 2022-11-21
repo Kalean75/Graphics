@@ -39,7 +39,8 @@ bool IntersectRay( inout HitInfo hit, Ray ray );
 vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 {
 	vec3 color = vec3(0,0,0);
-	for ( int i=0; i<NUM_LIGHTS; ++i ) {
+	for ( int i=0; i<NUM_LIGHTS; ++i ) 
+	{
 		// TO-DO: Check for shadows
 		// TO-DO: If not shadowed, perform shading using the Blinn model
 		color += mtl.k_d * lights[i].intensity;	// change this line
@@ -55,9 +56,17 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 {
 	hit.t = 1e30;
 	bool foundHit = false;
-	for ( int i=0; i<NUM_SPHERES; ++i ) {
+	for ( int i=0; i<NUM_SPHERES; ++i ) 
+	{
+		//(d*d)t^2 + 2d*(p-c)t+(p-c)*(p-c)-r^2
+		// {  a  }   {    b   }{      c       }  
 		// TO-DO: Test for ray-sphere intersection
+		float delta = pow(2*(ray.dir)*(ray.pos)*hit.t,2) - (4*pow(ray.dir,2)*pow(hit.t),2);
 		// TO-DO: If intersection is found, update the given HitInfo
+		//delta in quadratic equation must be positive then hit
+		//if negative no intersection
+		//b^2-4ac = delta
+		foundHit = true;
 	}
 	return foundHit;
 }
@@ -67,15 +76,23 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 vec4 RayTracer( Ray ray )
 {
 	HitInfo hit;
-	if ( IntersectRay( hit, ray ) ) {
+	if ( IntersectRay( hit, ray ) ) 
+	{
 		vec3 view = normalize( -ray.dir );
 		vec3 clr = Shade( hit.mtl, hit.position, hit.normal, view );
 		
 		// Compute reflections
 		vec3 k_s = hit.mtl.k_s;
-		for ( int bounce=0; bounce<MAX_BOUNCES; ++bounce ) {
-			if ( bounce >= bounceLimit ) break;
-			if ( hit.mtl.k_s.r + hit.mtl.k_s.g + hit.mtl.k_s.b <= 0.0 ) break;
+		for ( int bounce=0; bounce<MAX_BOUNCES; ++bounce ) 
+		{
+			if ( bounce >= bounceLimit )
+			{
+				break;
+			}
+			if ( hit.mtl.k_s.r + hit.mtl.k_s.g + hit.mtl.k_s.b <= 0.0 )
+			{
+				break;
+			}
 			
 			Ray r;	// this is the reflection ray
 			HitInfo h;	// reflection hit info
@@ -93,7 +110,9 @@ vec4 RayTracer( Ray ray )
 			}
 		}
 		return vec4( clr, 1 );	// return the accumulated color, including the reflections
-	} else {
+	} 
+	else 
+	{
 		return vec4( textureCube( envMap, ray.dir.xzy ).rgb, 0 );	// return the environment color
 	}
 }
