@@ -281,15 +281,15 @@ var MeshFS = `
 		{
 			vec4 Kd = texture2D(tex, texCoords);
 			vec4 ambient = vec4(vec3(0.2,0.2,0.2) * Kd.rgb,1.0);
-			vec4 specular = vec4(Ks.rgb* (phi/theta),1.0);
-			gl_FragColor = (I*theta)* (Kd+specular) + ambient;
+			vec4 specular = vec4(Ks.rgb* phi,1.0);
+			gl_FragColor = I* (Kd*theta+specular) + ambient;
 		}
 		else
 		{
 			 vec4 Kd = vec4(1.0,1.0,1.0,1.0);
 			 vec4 ambient = vec4(vec3(0.2,0.2,0.2) * Kd.rgb,1.0);
-			 vec4 specular = vec4(Ks.rgb* (phi/theta),1.0);
-			 gl_FragColor = (I*theta)* (Kd+specular) + ambient;
+			 vec4 specular = vec4(Ks.rgb* phi,1.0);
+			 gl_FragColor = I* (Kd*theta+specular) + ambient;
 		}
 	}
 `;
