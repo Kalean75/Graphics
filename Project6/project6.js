@@ -41,7 +41,6 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 	vec3 color = vec3(0,0,0);
 	for ( int i=0; i<NUM_LIGHTS; ++i ) 
 	{
-		//vec3 v = -normalize(view);
 		vec3 n = normalize(normal);
 		vec3 l = normalize(lights[i].position - position);
 		vec3 h = normalize(l + view);
@@ -77,7 +76,6 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 		//(d*d)t^2 + 2d*(p-c)t+(p-c)*(p-c)-r^2
 		// {  a  }   {    b   }{      c       }  
 		// TO-DO: Test for ray-sphere intersection
-		//delta = b^2-4ac
 		float a = dot(ray.dir,ray.dir);
 		float b = dot(vec3(2.0), (ray.dir * (ray.pos-spheres[i].center)));
 		float c = dot(ray.pos-spheres[i].center,ray.pos-spheres[i].center) - pow(spheres[i].radius,2.0);
@@ -128,11 +126,11 @@ vec4 RayTracer( Ray ray )
 			r.pos = hit.position;
 			if (IntersectRay( h, r ) ) 
 			{
+				view = normalize(-r.dir);
 				// TO-DO: Hit found, so shade the hit point
-				clr += Shade( h.mtl, h.position, h.normal, normalize(-r.dir));
+				clr += Shade( h.mtl, h.position, h.normal, view);
 
 				// TO-DO: Update the loop variables for tracing the next reflection ray
-				view = normalize(-r.dir);
 				hit = h;
 			} 
 			else 
