@@ -54,10 +54,10 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 		shadowRay.pos = position;
 		HitInfo hi;
 		float bias = 0.1;
-		if(!IntersectRay(hi, shadowRay) || hi.t <  bias)
+		if(!IntersectRay(hi, shadowRay) && hi.t > bias)
 		{
 			// TO-DO: If not shadowed, perform shading using the Blinn model
-			color += lights[i].intensity *(mtl.k_d * theta + mtl.k_s*(phi));	// change this line
+			color += lights[i].intensity*(mtl.k_d * theta + mtl.k_s*(phi));	// change this line
 		}
 	}
 	return color;
@@ -82,10 +82,10 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 		float delta = pow(b,2.0)-4.0*(a*c);
 	
 		float newT = (-b - sqrt(delta))/(2.0*a);
+		// TO-DO: If intersection is found, update the given HitInfo
 		if(newT >= 0.0 && newT < hit.t)
 		{
 			foundHit = true;
-			// TO-DO: If intersection is found, update the given HitInfo
 			hit.t = newT;
 			hit.mtl = spheres[i].mtl;
 			hit.position = ray.pos + hit.t * ray.dir;
@@ -132,6 +132,7 @@ vec4 RayTracer( Ray ray )
 
 				// TO-DO: Update the loop variables for tracing the next reflection ray
 				hit = h;
+				
 			} 
 			else 
 			{
