@@ -27,7 +27,7 @@ function GetModelViewMatrix( translationX, translationY, translationZ, rotationX
 		var mv = MatrixMult(trans, rotMatrix);
 	//var mv = trans;
 	return mv;
-}
+} 
 
 class MeshDrawer
 {
@@ -216,6 +216,70 @@ class MeshDrawer
 		gl.uniform1f(this.shininess,shininess);
 	}
 }
+
+// This function is called for every step of the simulation.
+// Its job is to advance the simulation for the given time step duration dt.
+// It updates the given positions and velocities.
+function SimTimeStep( dt, positions, velocities, springs, stiffness, damping, particleMass, gravity, restitution )
+{
+	//Fs=k(l-l_rest)*d
+	// l = |x1-x0|
+	// d = (x1-x0)/l
+	//position x
+	//velocity v
+	//initialize f = {0,0,0,....}
+	var forces = Array( positions.length ); // The total for per particle
+//The arrays of positions and velocities contain one 3D vector object of JavaScript class Vec3 per mass particle. 
+	// [TO-DO] Compute the total force of each particle
+	//f = {f0,f1,f2,....,fn-1}
+	//initialize f = {0,0,0,....}
+
+	//for each particle i
+	for(var i = 0; i < positions.length; i++)
+	{
+		//add gravity fi = fi+mi+g
+		forces[i] * particleMass * gravity;
+	}
+	//for each spring between particles i and j
+	for(var i = 0; i < positions.length; i++)
+	{
+		//√((x_2-x_1)²+(y_2-y_1)²
+		//compute spring forces fs and fd
+		var l = Math.abs(positions[springs[i].p1].x - positions[springs[i].p0].x);
+		var d = (positions[springs[i].p1].x - positions[springs[i].p0].x)/l;
+		var ldot = (velocities[springs[i].p1] - velocities[springs[i].p0])/d;
+		//Fs=k(l-l_rest)*d
+		var Fs = stiffness*(l-springs[i].rest)*d;
+		//Fd = kld
+		var Fd = damping*ldot*d;
+		//add spring force
+		//fi = fi + (fs+fd)
+		forces[springs[i].p0]+=(Fs + Fd);
+		//fj = fj - (fs+fd)
+		forces[springs[i].p1]-=(Fs + Fd);
+	}
+	//for each particle i
+	//for each spring between particles i and j
+		//compute spring forces fs and fd
+		//add spring force
+			//fi = fi + (fs+fd)
+			//fj = fj - (fs+fd)
+	// [TO-DO] Update positions and velocities
+	for(var i = 0; i < positions.length; i++)
+	{
+		var ai = forces[i]/particleMass;
+				//update position
+	//xi = xi + deltatvi
+	//update velocity
+	//vi = vi+deltat*ai
+		velocities[i] += dt*ai;
+		positions[i] += velocities[i] * dt * velocities[i];
+	}
+	// [TO-DO] Handle collisions
+	//h = xz - z0
+	//h' = rh r = resitution coefficient
+	// V'z = -rVz
+}
 //		C = I(n*w) * Kd
 // Vertex shader source code
 //P'=Mp
@@ -292,23 +356,3 @@ var MeshFS = `
 		}
 	}
 `;
-
-
-
-
-// This function is called for every step of the simulation.
-// Its job is to advance the simulation for the given time step duration dt.
-// It updates the given positions and velocities.
-function SimTimeStep( dt, positions, velocities, springs, stiffness, damping, particleMass, gravity, restitution )
-{
-	var forces = Array( positions.length ); // The total for per particle
-
-	// [TO-DO] Compute the total force of each particle
-	
-	// [TO-DO] Update positions and velocities
-	
-	// [TO-DO] Handle collisions
-	
-}
-
-
