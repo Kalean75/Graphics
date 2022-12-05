@@ -254,9 +254,9 @@ function SimTimeStep( dt, positions, velocities, springs, stiffness, damping, pa
 		var Fd = damping*ldot*d;
 		//add spring force
 		//fi = fi + (fs+fd)
-		forces[springs[i].p0]+=(Fs + Fd);
+		forces[springs[i].p0].inc(Fs + Fd);
 		//fj = fj - (fs+fd)
-		forces[springs[i].p1]-=(Fs + Fd);
+		forces[springs[i].p1].dec(Fs + Fd);
 	}
 	//for each particle i
 	//for each spring between particles i and j
@@ -272,8 +272,8 @@ function SimTimeStep( dt, positions, velocities, springs, stiffness, damping, pa
 	//xi = xi + deltatvi
 	//update velocity
 	//vi = vi+deltat*ai
-		velocities[i] += dt*ai;
-		positions[i] += velocities[i] * dt * velocities[i];
+		velocities[i].inc(dt*ai);
+		positions[i].inc(velocities[i] * dt * velocities[i]);
 	}
 	// [TO-DO] Handle collisions
 	//h = xz - z0
