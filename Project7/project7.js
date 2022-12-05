@@ -228,59 +228,55 @@ function SimTimeStep( dt, positions, velocities, springs, stiffness, damping, pa
 	//position x
 	//velocity v
 	//initialize f = {0,0,0,....}
-	var forces = Array( positions.length ); // The total for per particle
-//The arrays of positions and velocities contain one 3D vector object of JavaScript class Vec3 per mass particle. 
+	var forces = Array( positions.length ).fill(new Vec3(0,0,0)); // The total for per particle
+	//The arrays of positions and velocities contain one 3D vector object of JavaScript class Vec3 per mass particle. 
 	// [TO-DO] Compute the total force of each particle
 	//f = {f0,f1,f2,....,fn-1}
 	//initialize f = {0,0,0,....}
-
 	//for each particle i
-	for(var i = 0; i < positions.length; i++)
+	for(var i = 0; i < forces.length; i++)
 	{
 		//add gravity fi = fi+mi+g
-		forces[i] * particleMass * gravity;
+		forces[i] = forces[i].add(gravity).mul(particleMass);
 	}
 	//for each spring between particles i and j
-	for(var i = 0; i < positions.length; i++)
+	for(var i = 0; i < springs.length; i++)
 	{
-		//√((x_2-x_1)²+(y_2-y_1)²
 		//compute spring forces fs and fd
-		var l = Math.abs(positions[springs[i].p1].x - positions[springs[i].p0].x);
-		var d = (positions[springs[i].p1].x - positions[springs[i].p0].x)/l;
-		var ldot = (velocities[springs[i].p1] - velocities[springs[i].p0])/d;
+		var rest = springs[i].rest;
+		//stretch
+		var l = Math.abs(positions[springs[i].p1].sub(positions[springs[i].p0]).len());
+		//spring dir
+		var d = positions[springs[i].p1].sub(positions[springs[i].p0]).div(l);
+		//lenchange speed
+		var ldot = velocities[springs[i].p1].sub(velocities[springs[i].p0]).dot(d);
 		//Fs=k(l-l_rest)*d
-		var Fs = stiffness*(l-springs[i].rest)*d;
+		var Fs = d.mul(stiffness * (l - rest));
 		//Fd = kld
-		var Fd = damping*ldot*d;
+		var Fd = d.mul(damping*ldot);
 		//add spring force
 		//fi = fi + (fs+fd)
-		forces[springs[i].p0].inc(Fs + Fd);
+		forces[springs[i].p0] = forces[springs[i].p0].add(Fs).add(Fd);
 		//fj = fj - (fs+fd)
-		forces[springs[i].p1].dec(Fs + Fd);
+		forces[springs[i].p1] = forces[springs[i].p1].sub(Fs).add(Fd);
 	}
-	//for each particle i
-	//for each spring between particles i and j
-		//compute spring forces fs and fd
-		//add spring force
-			//fi = fi + (fs+fd)
-			//fj = fj - (fs+fd)
 	// [TO-DO] Update positions and velocities
 	for(var i = 0; i < positions.length; i++)
 	{
-		var ai = forces[i]/particleMass;
-				//update position
+		var ai = forces[i].div(particleMass);
+	//update position
 	//xi = xi + deltatvi
 	//update velocity
 	//vi = vi+deltat*ai
-		velocities[i].inc(dt*ai);
-		positions[i].inc(velocities[i] * dt * velocities[i]);
+	velocities[i] = ai.mul(dt).add(velocities[i]);
+	positions[i] = velocities[i].mul(dt).add(positions[i]);
 	}
 	// [TO-DO] Handle collisions
 	//h = xz - z0
 	//h' = rh r = resitution coefficient
 	// V'z = -rVz
 }
-//		C = I(n*w) * Kd
+//C = I(n*w) * Kd
 // Vertex shader source code
 //P'=Mp
 //n'=Mtn
